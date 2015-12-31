@@ -4,7 +4,7 @@ Simple script interpreter, wrapping the nsq HTTP API.
 
 ![Progress](http://progressed.io/bar/30?title=Underway)
 
-This package is the interpreter used as the backend by projects such as nsqrepl and nsqscripter.
+This package is the interpreter used as the backend by projects such as [nsqrepl](https://github.com/russmack/nsqrepl) and nsqscripter.
 
 ## Usage
 ```
