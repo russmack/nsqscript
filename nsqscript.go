@@ -40,15 +40,21 @@ const (
 	tokenEOF
 	tokenEOL
 
-	// Commands
+	// Objects
 	tokenChannel
 	tokenTopic
 	tokenIP
+
+	// Commands
+	tokenPing
+	tokenInfo
+	tokenStats
 	tokenPause
 	tokenUnpause
-	tokenPing
+	tokenCreate
 	tokenEmpty
 	tokenDelete
+	tokenPublish
 
 	// Primary
 	tokenLabel
@@ -56,15 +62,23 @@ const (
 )
 
 const (
-	tstrEOL     = "\n"
+	tstrEOL = "\n"
+
+	// Objects
 	tstrChannel = "channel"
 	tstrTopic   = "topic"
 	tstrIP      = "ip"
+
+	// Commands
+	tstrPing    = "ping"
+	tstrInfo    = "info"
+	tstrStats   = "stats"
 	tstrPause   = "pause"
 	tstrUnpause = "unpause"
-	tstrPing    = "ping"
+	tstrCreate  = "create"
 	tstrEmpty   = "empty"
 	tstrDelete  = "delete"
+	tstrPublish = "publish"
 )
 
 var (
@@ -90,8 +104,22 @@ func nextToken() {
 			currToken = Token{tokenChannel, "", 0}
 		case tstrPing:
 			currToken = Token{tokenPing, "", 0}
+		case tstrInfo:
+			currToken = Token{tokenInfo, "", 0}
+		case tstrStats:
+			currToken = Token{tokenStats, "", 0}
 		case tstrPause:
 			currToken = Token{tokenPause, "", 0}
+		case tstrUnpause:
+			currToken = Token{tokenUnpause, "", 0}
+		case tstrCreate:
+			currToken = Token{tokenCreate, "", 0}
+		case tstrEmpty:
+			currToken = Token{tokenEmpty, "", 0}
+		case tstrDelete:
+			currToken = Token{tokenDelete, "", 0}
+		case tstrPublish:
+			currToken = Token{tokenPublish, "", 0}
 		default:
 			//if isIPAddress(s) {
 			//	symbolTable[s] = ""
@@ -205,8 +233,36 @@ Loop:
 			newExpr = Expr{Name: "ping"}
 			newStmt = []Expr{newExpr}
 			nextToken()
+		case tokenInfo:
+			newExpr = Expr{Name: "info"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenStats:
+			newExpr = Expr{Name: "stats"}
+			newStmt = []Expr{newExpr}
+			nextToken()
 		case tokenPause:
 			newExpr = Expr{Name: "pause"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenUnpause:
+			newExpr = Expr{Name: "unpause"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenCreate:
+			newExpr = Expr{Name: "create"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenEmpty:
+			newExpr = Expr{Name: "empty"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenDelete:
+			newExpr = Expr{Name: "delete"}
+			newStmt = []Expr{newExpr}
+			nextToken()
+		case tokenPublish:
+			newExpr = Expr{Name: "publish"}
 			newStmt = []Expr{newExpr}
 			nextToken()
 		}
@@ -222,18 +278,59 @@ func execStatementList(stmtList [][]Expr, resultsChan chan string) {
 }
 
 func execStatement(stmt []Expr) string {
+	port := ":4151"
 	uri := ""
 	switch stmt[0].Name {
 	case "ping":
-		uri = stmt[1].Value + "/ping"
+		uri = stmt[1].Value + port + "/ping"
+	case "info":
+		uri = stmt[1].Value + port + "/info"
+	case "stats":
+		uri = stmt[1].Value + port + "/stats"
 	case "pause":
 		if len(stmt) == 3 { // "topic"
-			uri = stmt[1].Value + "/pause/topic?topic=" + stmt[2].Value
+			uri = stmt[1].Value + port + "/topic/pause?topic=" + stmt[2].Value
 		} else { // "channel"
 			channel := findExpr(stmt, "channel")
 			topic := findExpr(stmt, "topic")
-			uri = stmt[1].Value + "/pause/channel?topic=" + topic.Value + "&channel=" + channel.Value
+			uri = stmt[1].Value + port + "/channel/pause?topic=" + topic.Value + "&channel=" + channel.Value
 		}
+	case "unpause":
+		if len(stmt) == 3 { // "topic"
+			uri = stmt[1].Value + port + "/topic/unpause?topic=" + stmt[2].Value
+		} else { // "channel"
+			channel := findExpr(stmt, "channel")
+			topic := findExpr(stmt, "topic")
+			uri = stmt[1].Value + port + "/channel/unpause?topic=" + topic.Value + "&channel=" + channel.Value
+		}
+	case "create":
+		if len(stmt) == 3 { // "topic"
+			uri = stmt[1].Value + port + "/topic/create?topic=" + stmt[2].Value
+		} else { // "channel"
+			channel := findExpr(stmt, "channel")
+			topic := findExpr(stmt, "topic")
+			uri = stmt[1].Value + port + "/channel/create?topic=" + topic.Value + "&channel=" + channel.Value
+		}
+	case "empty":
+		if len(stmt) == 3 { // "topic"
+			uri = stmt[1].Value + port + "/topic/empty?topic=" + stmt[2].Value
+		} else { // "channel"
+			channel := findExpr(stmt, "channel")
+			topic := findExpr(stmt, "topic")
+			uri = stmt[1].Value + port + "/channel/empty?topic=" + topic.Value + "&channel=" + channel.Value
+		}
+	case "delete":
+		if len(stmt) == 3 { // "topic"
+			uri = stmt[1].Value + port + "/topic/delete?topic=" + stmt[2].Value
+		} else { // "channel"
+			channel := findExpr(stmt, "channel")
+			topic := findExpr(stmt, "topic")
+			uri = stmt[1].Value + port + "/channel/delete?topic=" + topic.Value + "&channel=" + channel.Value
+		}
+	case "publish":
+		topic := findExpr(stmt, "topic")
+		uri = stmt[1].Value + port + "/mpub?topic=" + topic.Value
+		// TODO: add POST body.
 	}
 	uri = "http://" + uri
 	return request(uri)
